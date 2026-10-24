@@ -20,12 +20,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#dq%82n^j3a3jg_c@xl+rqx#p+mz-)3cee0$dd*uftnz@zd-6b'
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-local-container")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() in {"true", "1", "yes"}
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if host.strip()
+]
 
 
 # Application definition
@@ -80,15 +84,12 @@ WSGI_APPLICATION = 'paritech.wsgi.application'
 
 DATABASES = {
     'default': {
-        # 'ENGINE': 'django.db.backends.sqlite3',
-        # 'NAME': BASE_DIR / 'db.sqlite3',
-
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'paritech',
-        'USER' : 'root',
-        'PASSWORD' : 'Shadow1',
-        'HOST' : 'localhost',
-        'PORT' : '3306'
+        'NAME': os.environ.get('DB_NAME', 'paritech'),
+        'USER': os.environ.get('DB_USER', 'paritech'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
     }
 }
 
@@ -129,17 +130,6 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# REST API PERMISSION
-# REST_FRAMEWORK = {
-#     'DEFAULT_PERMISSION_CLASSES': [
-#         'rest_framework.permissions.AllowAny',
-#     ]
-# }
-
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",
-#     'http://localhost:5173'
-# ]
 
 CORS_ORIGIN_ALLOW_ALL = True #allow all front end ports to access 
 CORS_ALLOW_CREDENTIALS = True #allow front end to access the cookies

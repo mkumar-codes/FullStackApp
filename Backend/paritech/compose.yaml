@@ -1,0 +1,79 @@
+services:
+  backend:
+    build: .
+    restart: unless-stopped
+    command:
+      - sh
+      - -c
+      - |
+        python -c '
+        import os, time, MySQLdb
+        for attempt in range(30):
+            try:
+                connection = MySQLdb.connect(
+                    host=os.environ["DB_HOST"],
+                    port=int(os.environ["DB_PORT"]),
+                    user=os.environ["DB_USER"],
+                    passwd=os.environ["DB_PASSWORD"],
+                    db=os.environ["DB_NAME"],
+                    connect_timeout=3,
+                )
+                connection.close()
+                break
+            except MySQLdb.OperationalError:
+                if attempt == 29:
+                    raise
+                print(f"Waiting for MySQL ({attempt + 1}/30)...", flush=True)
+                time.sleep(2)
+        '
+        python manage.py migrate --noinput &&
+        exec gunicorn paritech.wsgi:application --bind 0.0.0.0:8000
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-local-only-change-me}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-false}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      DB_NAME: paritech
+      DB_USER: paritech
+      DB_PASSWORD: ${DB_PASSWORD:-paritech-dev-password}
+      DB_HOST: db
+      DB_PORT: "3306"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - media_data:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - from urllib.request import urlopen; urlopen("http://127.0.0.1:8000/api/", timeout=3)
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: paritech
+      MYSQL_USER: paritech
+      MYSQL_PASSWORD: ${DB_PASSWORD:-paritech-dev-password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-paritech-root-dev-password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping --protocol=TCP -h 127.0.0.1 -P 3306 -u root -p"$${MYSQL_ROOT_PASSWORD}"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  media_data:
+  mysql_data:
