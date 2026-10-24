@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path, os
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,13 +20,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#dq%82n^j3a3jg_c@xl+rqx#p+mz-)3cee0$dd*uftnz@zd-6b'
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() in {"true", "1", "yes"}
 
-ALLOWED_HOSTS = []
+# Set DJANGO_SECRET_KEY in production. The fallback is only for local development.
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set when DEBUG is false.")
+    SECRET_KEY = "django-insecure-local-development-only"
+
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+]
+render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+if render_hostname:
+    ALLOWED_HOSTS.append(render_hostname)
+if not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 
 # Application definition
@@ -81,15 +95,12 @@ WSGI_APPLICATION = 'paritech.wsgi.application'
 
 DATABASES = {
     'default': {
-        # 'ENGINE': 'django.db.backends.sqlite3',
-        # 'NAME': BASE_DIR / 'db.sqlite3',
-
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'paritech',
-        'USER' : 'root',
-        'PASSWORD' : 'Shadow1',
-        'HOST' : 'localhost',
-        'PORT' : '3306'
+        'NAME': os.environ.get('DB_NAME', 'paritech'),
+        'USER': os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
     }
 }
 
