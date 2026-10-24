@@ -3,6 +3,7 @@ import { ProductContext } from "../../Context/Context";
 import Product from "./Product";
 import Loader from "../Loader";
 import { Link } from "react-router-dom";
+import { API_BASE_URL } from "../../config/api";
 
 const Products = () => {
   const {
@@ -30,7 +31,7 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try{
-    const response = await fetch("http://127.0.0.1:8000/api/");
+    const response = await fetch(`${API_BASE_URL}/api/`);
     if(!response.ok){
       throw new Error(`HTTP Error! status : ${response.status}`)
     }
@@ -93,5 +94,4 @@ const Products = () => {
 };
 
 export default Products;
-
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { API_BASE_URL } from "../config/api";
 
 const Dashboard = () => {
   const [name, setName] = useState("");
@@ -6,7 +7,7 @@ const Dashboard = () => {
   useEffect(() => {
     try {
       const fetchUser = async () => {
-        const response = await fetch("http://localhost:8000/api/user", {
+        const response = await fetch(`${API_BASE_URL}/api/user`, {
           headers: { "Content-Type": "application/json" },
           credentials: "include",
         });
